@@ -1,0 +1,14 @@
+int main() {
+    int x;
+    x = 10;
+    double y;
+    y = 20.5;
+    
+    if (x < 20) {
+        Print("Hello World");
+    } else {
+        Print("x is greater or equal to 20");
+    }
+    
+    return 0;
+}

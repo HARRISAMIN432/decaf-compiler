@@ -1,0 +1,24 @@
+class Animal {
+    int age;
+    void Init() {
+        this.age = 0;
+    }
+}
+
+class Cow extends Animal {
+    void Moo() {
+        Print("Moo");
+    }
+}
+
+int main() {
+    Cow c;
+    c = New(Cow);
+    c.Init();
+    c.Moo();
+    
+    // Testing lexical error handling:
+    @ # ~
+    
+    return 0;
+}
