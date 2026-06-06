@@ -301,10 +301,11 @@ def get_decaf_grammar():
             ["Factor", "TermTail"]
         ],
         "TermTail": [
-            ["OP_*", "Factor", "TermTail"],
-            ["OP_/", "Factor", "TermTail"],
-            ["epsilon"]
-        ],
+    ["OP_*", "Factor", "TermTail"],
+    ["OP_/", "Factor", "TermTail"],
+    ["OP_%", "Factor", "TermTail"],   
+    ["epsilon"]
+],
         "Factor": [
             ["IDENT", "FactorIdentSuffix"],
             ["KEYWORD_this", "FactorIdentSuffix"],
