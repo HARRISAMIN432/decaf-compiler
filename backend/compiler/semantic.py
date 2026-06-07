@@ -7,13 +7,12 @@ class SymbolTableBuilder:
         self.st            = SymbolTableManager()
 
     def build(self):
-        self.st.enter_scope()   # Global scope (level 1)
+        self.st.enter_scope()  
 
         idx = 0
         while idx < len(self.tokens):
             t = self.tokens[idx]
 
-            # ── Scope boundaries ───────────────────────────────────────────
             if t.type == "PUNCT_{" or (t.type == "PUNCT" and t.value == "{"):
                 self.st.enter_scope()
                 idx += 1
@@ -24,7 +23,6 @@ class SymbolTableBuilder:
                 idx += 1
                 continue
 
-            # ── class IDENT ────────────────────────────────────────────────
             if t.type in ("KEYWORD_class", "KEYWORD") and (
                     t.type == "KEYWORD_class" or t.value == "class"):
                 if idx + 1 < len(self.tokens):
@@ -36,12 +34,10 @@ class SymbolTableBuilder:
                         idx += 2
                         continue
 
-            # ── Type IDENT … ───────────────────────────────────────────────
             type_kws = {
                 "KEYWORD_int", "KEYWORD_double",
                 "KEYWORD_bool", "KEYWORD_string", "KEYWORD_void"
             }
-            # also handle legacy KEYWORD tokens
             legacy_type = (t.type == "KEYWORD" and
                            t.value in ("int","double","bool","string","void"))
 
@@ -50,7 +46,6 @@ class SymbolTableBuilder:
                 if idx + 1 < len(self.tokens):
                     nt = self.tokens[idx + 1]
                     if nt.type == "IDENT":
-                        # Function?
                         is_func = (idx + 2 < len(self.tokens) and
                                    (self.tokens[idx+2].type in ("PUNCT_(","PUNCT") and
                                     getattr(self.tokens[idx+2],'value','') == '('))
@@ -61,7 +56,6 @@ class SymbolTableBuilder:
                         idx += 2
                         continue
 
-            # ── Named type: IDENT IDENT ; → object declaration ────────────
             if t.type == "IDENT":
                 if idx + 1 < len(self.tokens):
                     nt = self.tokens[idx + 1]

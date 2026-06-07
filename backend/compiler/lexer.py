@@ -38,13 +38,11 @@ class Lexer:
         self.line = 1
         self.column = 1
 
-        # ── NEW: wire up the shared error handler ──────────────────────────
         self.error_handler = error_handler
 
         self.load_buffer(self.buffer1)
         self.current_char = self.get_char_at_ptr()
 
-    # ── Buffer helpers (unchanged) ─────────────────────────────────────────
 
     def load_buffer(self, buffer):
         for i in range(self.buffer_size):
@@ -105,7 +103,6 @@ class Lexer:
             return True
         return False
 
-    # ── Main scanner ───────────────────────────────────────────────────────
 
     def get_next_token(self):
         while self.current_char != '\0':
@@ -120,7 +117,6 @@ class Lexer:
             start_line = self.line
             start_col  = self.column
 
-            # ── Identifiers / keywords ─────────────────────────────────────
             if self.current_char.isalpha() or self.current_char == '_':
                 ident = ""
                 while self.current_char.isalnum() or self.current_char == '_':
@@ -132,10 +128,8 @@ class Lexer:
                     return Token("BOOL_CONST", ident, start_line, start_col)
                 return Token("IDENT", ident[:31], start_line, start_col)
 
-            # ── Numbers ────────────────────────────────────────────────────
             if self.current_char.isdigit():
                 num_str = ""
-                # Hex
                 if self.current_char == '0' and self.peek() in ('x', 'X'):
                     num_str += self.current_char; self.advance()
                     num_str += self.current_char; self.advance()
@@ -164,7 +158,6 @@ class Lexer:
                 return Token("DOUBLE_CONST" if is_double else "INT_CONST",
                              num_str, start_line, start_col)
 
-            # ── String literals ────────────────────────────────────────────
             if self.current_char == '"':
                 string_val = ""
                 self.advance()
@@ -173,14 +166,11 @@ class Lexer:
                 if self.current_char == '"':
                     self.advance()
                     return Token("STRING_CONST", string_val, start_line, start_col)
-                # Unterminated string → lexical error, skip & continue
                 msg = f"Unterminated string literal"
                 if self.error_handler:
                     self.error_handler.report_lexical_error(start_line, start_col, msg)
-                # don't return an ERROR token; just keep scanning
                 continue
 
-            # ── Operators ──────────────────────────────────────────────────
             c = self.current_char
             p = self.peek()
             two_char = ['<=', '>=', '==', '!=', '&&', '||']
@@ -196,13 +186,10 @@ class Lexer:
                 self.advance()
                 return Token(f"PUNCT_{c}", c, start_line, start_col)
 
-            # ── Unrecognised character → lexical error, SKIP, continue ─────
             self.advance()
             msg = f"Unrecognized character: '{c}'"
             if self.error_handler:
                 self.error_handler.report_lexical_error(start_line, start_col, msg)
-            # Do NOT emit an ERROR token — just keep scanning so the parser
-            # never sees it and doesn't need error recovery for lexical junk.
 
         return Token("EOF", "", self.line, self.column)
 

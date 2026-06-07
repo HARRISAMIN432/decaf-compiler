@@ -48,7 +48,6 @@ class LRParser:
 
             action = self.action_table.get(state, {}).get(token_sym)
 
-            # ── Shift ─────────────────────────────────────────────────────
             if action and action.startswith("s"):
                 next_state = int(action[1:])
                 state_stack.append(next_state)
@@ -62,7 +61,6 @@ class LRParser:
                     "action_label": f"Shift  {token_sym}  → state {next_state}"
                 })
 
-            # ── Reduce ────────────────────────────────────────────────────
             elif action and action.startswith("r"):
                 prod_idx  = int(action[1:])
                 nt, rhs   = self.productions[prod_idx]
@@ -95,7 +93,6 @@ class LRParser:
                     "action_label": f"Reduce  {nt}  →  {rhs_str}"
                 })
 
-            # ── Accept ────────────────────────────────────────────────────
             elif action == "Accept":
                 self.trace.append({
                     "step": step, "state": state, "input": token_sym,
@@ -103,7 +100,6 @@ class LRParser:
                 })
                 break
 
-            # ── Error + panic recovery ─────────────────────────────────────
             else:
                 expected = sorted(self.action_table.get(state, {}).keys())
                 msg = f"Unexpected '{token_sym}' in state {state} — expected {expected}"
@@ -113,7 +109,6 @@ class LRParser:
                     "action": "error", "action_label": f"Error (panic recovery)"
                 })
 
-                # Pop states until we find one with a sync token action
                 sync_tokens = {'PUNCT_;', 'PUNCT_}', '$'}
                 recovered   = False
                 while len(state_stack) > 1:

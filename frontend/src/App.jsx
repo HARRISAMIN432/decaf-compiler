@@ -1,21 +1,17 @@
 import { useState } from "react";
 
-const DEFAULT_CODE = `class Animal {
-    int age;
-    void Init() {
-        this.age = 0;
+const DEFAULT_CODE = `int main() {
+    int x;
+    x = 10;
+    double y;
+    y = 20.5;
+    
+    if (x < 20) {
+        Print("Hello World");
+    } else {
+        Print("x is greater or equal to 20");
     }
-}
-class Cow extends Animal {
-    void Moo() {
-        Print("Moo");
-    }
-}
-int main() {
-    Cow c;
-    c = New(Cow);
-    c.Init();
-    c.Moo();
+    
     return 0;
 }`;
 
@@ -56,8 +52,6 @@ function getTokenDisplay(t) {
   if (t.type === "EOF") return "EOF";
   return t.value;
 }
-
-// ── Sub-components ─────────────────────────────────────────────────────────
 
 function Badge({ children, color = "#6b7280" }) {
   return (
@@ -197,8 +191,6 @@ function ErrorList({ errors }) {
   );
 }
 
-// ── Tokens tab ─────────────────────────────────────────────────────────────
-
 function TokensTab({ tokens, summary }) {
   const [filter, setFilter] = useState("all");
   const categories = [
@@ -230,7 +222,6 @@ function TokensTab({ tokens, summary }) {
         count={tokens.filter((t) => t.type !== "EOF").length + " tokens"}
       />
 
-      {/* Summary bar */}
       <div
         style={{
           display: "flex",
@@ -258,7 +249,6 @@ function TokensTab({ tokens, summary }) {
         ))}
       </div>
 
-      {/* Filter pills */}
       <div
         style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}
       >
@@ -283,7 +273,6 @@ function TokensTab({ tokens, summary }) {
         ))}
       </div>
 
-      {/* Token grid */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {filtered.map((t, i) => {
           const col = getTokenColor(t.type);
@@ -331,8 +320,6 @@ function TokensTab({ tokens, summary }) {
     </div>
   );
 }
-
-// ── Grammar sets tab ───────────────────────────────────────────────────────
 
 function GrammarTab({ grammar }) {
   const [search, setSearch] = useState("");
@@ -452,8 +439,6 @@ function GrammarTab({ grammar }) {
   );
 }
 
-// ── RD parse tree tab ──────────────────────────────────────────────────────
-
 function TreeNode({ node, depth = 0 }) {
   const [open, setOpen] = useState(depth < 3);
   if (!node || typeof node !== "object") return null;
@@ -540,8 +525,6 @@ function RDTab({ rd }) {
     </div>
   );
 }
-
-// ── LL(1) trace tab ────────────────────────────────────────────────────────
 
 const ACTION_STYLE = {
   predict: { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe" },
@@ -677,7 +660,6 @@ function LL1Tab({ ll1 }) {
           overflow: "hidden",
         }}
       >
-        {/* Header */}
         <div
           style={{
             display: "grid",
@@ -703,7 +685,6 @@ function LL1Tab({ ll1 }) {
         ))}
       </div>
 
-      {/* Pagination */}
       {pages > 1 && (
         <div
           style={{
@@ -751,8 +732,6 @@ function LL1Tab({ ll1 }) {
     </div>
   );
 }
-
-// ── LR trace tab ───────────────────────────────────────────────────────────
 
 const LR_STYLE = {
   shift: { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe" },
@@ -980,8 +959,6 @@ function LRTab({ lr }) {
   );
 }
 
-// ── Symbol table tab ────────────────────────────────────────────────────────
-
 const KIND_COLORS = {
   variable: { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe" },
   function: { bg: "#fdf4ff", text: "#7e22ce", border: "#e9d5ff" },
@@ -1035,7 +1012,6 @@ function SymbolTab({ symbols }) {
       <div
         style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}
       >
-        {/* Kind filter */}
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {kinds.map((k) => {
             const s = KIND_COLORS[k] || KIND_COLORS.default;
@@ -1209,7 +1185,7 @@ function SymbolTab({ symbols }) {
                         color: "#6b7280",
                       }}
                     >
-                      {"›".repeat(sym.scope_level)} {sym.scope_level}
+                      {sym.scope_level - 1}
                     </span>
                   </td>
                   <td
@@ -1232,8 +1208,6 @@ function SymbolTab({ symbols }) {
     </div>
   );
 }
-
-// ── Errors tab ─────────────────────────────────────────────────────────────
 
 function ErrorsTab({ errors }) {
   if (!errors) return <EmptyState msg="No error data." />;
@@ -1315,8 +1289,6 @@ function ErrorsTab({ errors }) {
   );
 }
 
-// ── Main App ───────────────────────────────────────────────────────────────
-
 const TABS = [
   { id: "tokens", label: "Lexer" },
   { id: "grammar", label: "Grammar" },
@@ -1397,7 +1369,6 @@ export default function App() {
         background: "#f8fafc",
       }}
     >
-      {/* ── Header ───────────────────────────────────────────────────── */}
       <header
         style={{
           display: "flex",
@@ -1427,7 +1398,6 @@ export default function App() {
           <span style={{ fontWeight: 600, fontSize: 15, color: "#111827" }}>
             Compiler
           </span>
-          <span style={{ fontSize: 12, color: "#9ca3af" }}>CS-471L</span>
         </div>
 
         <div
@@ -1438,28 +1408,6 @@ export default function App() {
             gap: 12,
           }}
         >
-          {compilerData && errorCount > 0 && (
-            <button
-              onClick={() => setActiveTab("errors")}
-              style={{
-                padding: "5px 12px",
-                borderRadius: 7,
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: "pointer",
-                background: "#fef2f2",
-                border: "1px solid #fecaca",
-                color: "#991b1b",
-              }}
-            >
-              ⚠ {errorCount} error{errorCount !== 1 ? "s" : ""}
-            </button>
-          )}
-          {compilerData && errorCount === 0 && (
-            <span style={{ fontSize: 12, color: "#166534", fontWeight: 600 }}>
-              ✓ No errors
-            </span>
-          )}
           <button
             onClick={handleCompile}
             disabled={isCompiling}
@@ -1480,9 +1428,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* ── Body ─────────────────────────────────────────────────────── */}
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        {/* ── Editor pane ────────────────────────────────────────────── */}
         <div
           style={{
             width: 360,
@@ -1525,7 +1471,6 @@ export default function App() {
           />
         </div>
 
-        {/* ── Output pane ────────────────────────────────────────────── */}
         <div
           style={{
             flex: 1,
@@ -1534,7 +1479,6 @@ export default function App() {
             overflow: "hidden",
           }}
         >
-          {/* Tabs */}
           <div
             style={{
               display: "flex",
@@ -1569,27 +1513,11 @@ export default function App() {
                   }}
                 >
                   {t.label}
-                  {hasErr && !active && (
-                    <span
-                      style={{
-                        marginLeft: 5,
-                        fontSize: 10,
-                        fontWeight: 800,
-                        background: "#fef2f2",
-                        color: "#991b1b",
-                        borderRadius: 999,
-                        padding: "0 5px",
-                      }}
-                    >
-                      {errorCount}
-                    </span>
-                  )}
                 </button>
               );
             })}
           </div>
 
-          {/* Tab content */}
           <div
             style={{
               flex: 1,

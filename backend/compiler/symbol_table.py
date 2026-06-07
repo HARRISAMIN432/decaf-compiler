@@ -17,9 +17,9 @@ class SymbolTableEntry:
 
 class SymbolTableManager:
     def __init__(self):
-        self.scope_stack = [{}] # List of hash tables (dicts)
+        self.scope_stack = [{}] 
         self.current_scope_level = 0
-        self.all_entries = [] # To keep a flat record for UI display
+        self.all_entries = [] 
 
     def enter_scope(self):
         self.current_scope_level += 1
@@ -40,7 +40,6 @@ class SymbolTableManager:
         return True, "Inserted successfully."
 
     def lookup(self, name):
-        # Look from innermost scope to outermost
         for scope in reversed(self.scope_stack):
             if name in scope:
                 return scope[name]

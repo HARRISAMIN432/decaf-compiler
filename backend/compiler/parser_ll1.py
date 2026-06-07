@@ -18,7 +18,6 @@ class LL1Parser:
         if token.type == "DOUBLE_CONST":  return "DOUBLE_CONST"
         if token.type == "BOOL_CONST":    return "BOOL_CONST"
         if token.type == "STRING_CONST":  return "STRING_CONST"
-        # Already-prefixed tokens from the fixed lexer
         return token.type
 
     def build_parse_table(self):
@@ -58,7 +57,6 @@ class LL1Parser:
                 token_sym     = "$"
                 line = col    = 0
 
-            # ── Accept ────────────────────────────────────────────────────
             if top == '$' and token_sym == '$':
                 self.trace.append({
                     "step": step,
@@ -69,7 +67,6 @@ class LL1Parser:
                 })
                 break
 
-            # ── Terminal match ─────────────────────────────────────────────
             if top == token_sym:
                 self.trace.append({
                     "step": step,
@@ -82,7 +79,6 @@ class LL1Parser:
                 idx += 1
                 continue
 
-            # ── Terminal mismatch ──────────────────────────────────────────
             if top not in self.grammar.non_terminals:
                 msg = f"Expected '{top}', got '{token_sym}'"
                 self._report_error(line, col, msg)
@@ -93,11 +89,10 @@ class LL1Parser:
                     "action": "error",
                     "action_label": f"Error  {msg}"
                 })
-                stack.pop()   # discard unmatched terminal
-                idx += 1      # skip bad token
+                stack.pop()   
+                idx += 1      
                 continue
 
-            # ── Non-terminal: look up table ────────────────────────────────
             prod = self.parse_table.get(top, {}).get(token_sym)
 
             if prod is not None:
@@ -114,7 +109,6 @@ class LL1Parser:
                     for sym in reversed(prod):
                         stack.append(sym)
             else:
-                # ── Panic-mode recovery ────────────────────────────────────
                 expected = sorted(self.parse_table.get(top, {}).keys())
                 msg = f"Unexpected '{token_sym}' — expected one of {expected}"
                 self._report_error(line, col, msg)
@@ -134,7 +128,6 @@ class LL1Parser:
         return {
             "trace": self.trace,
             "errors": self.errors,
-            # Serialise table: prod lists → strings for readability
             "table": {
                 nt: {t: " ".join(p) if p != ['epsilon'] else "ε"
                      for t, p in row.items()}

@@ -16,61 +16,47 @@ def compile_code():
     data = request.json
     source_code = data.get('source_code', '')
 
-    # Single shared error handler for the whole pipeline
     error_handler = ErrorHandler()
 
-    # ── 1. Lexical Analysis ────────────────────────────────────────────────
     lexer  = Lexer(source_code, error_handler=error_handler)
     tokens = lexer.tokenize()
 
-    # Separate clean tokens from error tokens for display
     clean_tokens = [t for t in tokens if t.type != "ERROR"]
     error_tokens = [t for t in tokens if t.type == "ERROR"]
     for et in error_tokens:
         error_handler.report_lexical_error(et.line, et.column, et.value)
 
-    # ── 2. Grammar setup ───────────────────────────────────────────────────
     grammar = get_decaf_grammar()
     grammar.compute_follow()
     grammar.build_slr_tables()
 
-    # ── 3. Recursive Descent Parser ────────────────────────────────────────
     rd_parser = RecursiveDescentParser(clean_tokens, error_handler=error_handler)
     rd_result = rd_parser.parse()
 
-    # ── 4. LL(1) Predictive Parser ─────────────────────────────────────────
     ll1_parser = LL1Parser(grammar, clean_tokens, error_handler=error_handler)
     ll1_result = ll1_parser.parse()
 
-    # ── 5. LR (SLR) Parser ────────────────────────────────────────────────
     lr_parser = LRParser(grammar, clean_tokens, error_handler=error_handler)
     lr_result = lr_parser.parse()
 
-    # ── 6. Symbol Table ────────────────────────────────────────────────────
     st_builder = SymbolTableBuilder(clean_tokens, error_handler=error_handler)
     st = st_builder.build()
 
     error_handler.print_summary()
 
-    # ── 7. Build clean response ────────────────────────────────────────────
     return jsonify({
-        # Tokens: group by type for readability
         "tokens": [t.to_dict() for t in clean_tokens],
         "token_summary": _token_summary(clean_tokens),
 
-        # Parser results
         "parsers": {
             "rd":  rd_result,
             "ll1": {
                 "trace":  ll1_result["trace"],
                 "errors": ll1_result["errors"],
-                # Only send table on explicit request — it's huge
-                # "table": ll1_result["table"],
             },
             "lr": lr_result,
         },
 
-        # Grammar: FIRST/FOLLOW sorted for readability
         "grammar": {
             "first":  {k: sorted(v) for k, v in grammar.first_sets.items()
                        if k in grammar.non_terminals},
@@ -78,10 +64,8 @@ def compile_code():
                        if k in grammar.non_terminals},
         },
 
-        # Symbol table
         "symbol_table": st.dump(),
 
-        # All errors unified
         "errors": error_handler.get_all_errors(),
     })
 

@@ -1,9 +1,3 @@
-"""
-Recursive Descent Parser for Decaf (Lab 4).
-One function per non-terminal.  The grammar is LL(1) so a single token of
-lookahead is sufficient everywhere.
-"""
-
 class RecursiveDescentParser:
     def __init__(self, tokens, error_handler=None):
         self.tokens        = tokens
@@ -12,7 +6,6 @@ class RecursiveDescentParser:
         self.errors        = []
         self.current_token = self.tokens[0] if self.tokens else None
 
-    # ── Token navigation ───────────────────────────────────────────────────
 
     def advance(self):
         self.idx += 1
@@ -53,9 +46,8 @@ class RecursiveDescentParser:
         for kw in ("int", "double", "bool", "string"):
             if self.is_keyword(kw):
                 return True
-        return self.is_ident()   # named type (class name)
+        return self.is_ident()  
 
-    # ── match: consume one token or report error ───────────────────────────
 
     def match(self, expected_type, expected_value=None):
         t = self.current_token
@@ -63,8 +55,7 @@ class RecursiveDescentParser:
             self._error("EOF", "EOF", expected_type, expected_value)
             return None
         type_ok = (t.type == expected_type or
-                   t.type == expected_type.split('_', 1)[0])  # loose match
-        # Exact match on full type string (e.g. KEYWORD_int)
+                   t.type == expected_type.split('_', 1)[0])  
         type_ok = (t.type == expected_type)
         val_ok  = (expected_value is None or t.value == expected_value)
         if type_ok and val_ok:
@@ -121,7 +112,6 @@ class RecursiveDescentParser:
         self._panic_recover()
         return None
 
-    # ── Error reporting & panic-mode recovery ──────────────────────────────
 
     def _error(self, got_type, got_val, exp_type, exp_val):
         t    = self.current_token
@@ -142,24 +132,20 @@ class RecursiveDescentParser:
                 return
             self.advance()
 
-    # ── Non-terminal parse functions ───────────────────────────────────────
 
     def parse(self):
         tree = self.parse_Program()
         return {"tree": tree, "errors": self.errors}
 
-    # Program ::= DeclList
     def parse_Program(self):
         return {"node": "Program", "children": [self.parse_DeclList()]}
 
-    # DeclList ::= Decl DeclList | ε
     def parse_DeclList(self):
         children = []
         while self.current_token and self.peek_type() != "EOF":
             children.append(self.parse_Decl())
         return {"node": "DeclList", "children": children}
 
-    # Decl ::= class IDENT ClassTail | VarOrFuncDecl
     def parse_Decl(self):
         if self.is_keyword("class"):
             self.match_keyword("class")
@@ -170,7 +156,6 @@ class RecursiveDescentParser:
                     "children": [tail]}
         return {"node": "Decl", "children": [self.parse_VarOrFuncDecl()]}
 
-    # ClassTail ::= extends IDENT ClassBody | ClassBody
     def parse_ClassTail(self):
         if self.is_keyword("extends"):
             self.match_keyword("extends")
@@ -181,26 +166,21 @@ class RecursiveDescentParser:
                     "children": [body]}
         return {"node": "ClassTail", "children": [self.parse_ClassBody()]}
 
-    # ClassBody ::= { FieldList }
     def parse_ClassBody(self):
         self.match_punct("{")
         fields = self.parse_FieldList()
         self.match_punct("}")
         return {"node": "ClassBody", "children": [fields]}
 
-    # FieldList ::= Field FieldList | ε
     def parse_FieldList(self):
         children = []
         while self.current_token and not self.is_punct("}"):
             children.append(self.parse_Field())
         return {"node": "FieldList", "children": children}
 
-    # Field ::= VarOrFuncDecl
     def parse_Field(self):
         return {"node": "Field", "children": [self.parse_VarOrFuncDecl()]}
 
-    # VarOrFuncDecl ::= Type IDENT VarOrFuncDeclTail
-    #                 | void IDENT ( Formals ) StmtBlock
     def parse_VarOrFuncDecl(self):
         if self.is_keyword("void"):
             self.match_keyword("void")
@@ -212,7 +192,6 @@ class RecursiveDescentParser:
             return {"node": "FuncDecl(void)",
                     "name": name.value if name else "?",
                     "children": [formals, body]}
-        # Type IDENT …
         type_node = self.parse_Type()
         name      = self.match_ident()
         tail      = self.parse_VarOrFuncDeclTail()
@@ -220,7 +199,6 @@ class RecursiveDescentParser:
                 "name": name.value if name else "?",
                 "children": [type_node, tail]}
 
-    # VarOrFuncDeclTail ::= ; | ( Formals ) StmtBlock
     def parse_VarOrFuncDeclTail(self):
         if self.is_punct(";"):
             self.match_punct(";")
@@ -231,7 +209,6 @@ class RecursiveDescentParser:
         body = self.parse_StmtBlock()
         return {"node": "FuncDeclTail", "children": [formals, body]}
 
-    # Type ::= int | double | bool | string | IDENT
     def parse_Type(self):
         for kw in ("int", "double", "bool", "string"):
             if self.is_keyword(kw):
@@ -244,13 +221,11 @@ class RecursiveDescentParser:
         self._panic_recover()
         return {"node": "Type(?)"}
 
-    # Formals ::= VariableList | ε
     def parse_Formals(self):
         if self.is_type_kw():
             return {"node": "Formals", "children": [self.parse_VariableList()]}
         return {"node": "Formals(ε)"}
 
-    # VariableList ::= Type IDENT VariableListTail
     def parse_VariableList(self):
         type_node = self.parse_Type()
         name      = self.match_ident()
@@ -259,7 +234,6 @@ class RecursiveDescentParser:
                 "name": name.value if name else "?",
                 "children": [type_node, tail]}
 
-    # VariableListTail ::= , Type IDENT VariableListTail | ε
     def parse_VariableListTail(self):
         if self.is_punct(","):
             self.match_punct(",")
@@ -271,14 +245,12 @@ class RecursiveDescentParser:
                     "children": [type_node, tail]}
         return {"node": "VariableListTail(ε)"}
 
-    # StmtBlock ::= { BlockItemList }
     def parse_StmtBlock(self):
         self.match_punct("{")
         items = self.parse_BlockItemList()
         self.match_punct("}")
         return {"node": "StmtBlock", "children": [items]}
 
-    # BlockItemList ::= BlockItem BlockItemList | ε
     def parse_BlockItemList(self):
         children = []
         starters = {
@@ -292,7 +264,6 @@ class RecursiveDescentParser:
             children.append(self.parse_BlockItem())
         return {"node": "BlockItemList", "children": children}
 
-    # BlockItem — dispatches to the right statement kind
     def parse_BlockItem(self):
         t = self.current_token
         if t is None:
@@ -328,19 +299,15 @@ class RecursiveDescentParser:
         if t.type == "KEYWORD_Print":  return self.parse_PrintStmt()
         if t.type == "PUNCT_{":        return self.parse_StmtBlock()
 
-        # Fallback: expression statement
         expr = self.parse_OtherExprStart()
         self.match_punct(";")
         return {"node": "ExprStmt", "children": [expr]}
 
-    # IdentStart — after seeing IDENT in a block item
     def parse_IdentStart(self):
-        # IDENT ;  (variable declaration of named type)
         if self.is_ident():
             name = self.match_ident()
             self.match_punct(";")
             return {"node": "NamedTypeDecl", "name": name.value if name else "?"}
-        # . IDENT …
         if self.is_punct("."):
             self.match_punct(".")
             field = self.match_ident()
@@ -349,7 +316,6 @@ class RecursiveDescentParser:
             return {"node": "FieldAccess",
                     "field": field.value if field else "?",
                     "children": [rest]}
-        # ( Actuals ) …
         if self.is_punct("("):
             self.match_punct("(")
             actuals = self.parse_Actuals()
@@ -357,12 +323,10 @@ class RecursiveDescentParser:
             rest = self.parse_IdentExprRest()
             self.match_punct(";")
             return {"node": "FuncCall", "children": [actuals, rest]}
-        # IdentExprRest ;
         rest = self.parse_IdentExprRest()
         self.match_punct(";")
         return {"node": "IdentRest", "children": [rest]}
 
-    # IdentStartStmt — after 'this' or IDENT inside a Stmt
     def parse_IdentStartStmt(self):
         if self.is_punct("."):
             self.match_punct(".")
@@ -379,7 +343,6 @@ class RecursiveDescentParser:
             return {"node": "FuncCall", "children": [actuals, rest]}
         return {"node": "IdentRest", "children": [self.parse_IdentExprRest()]}
 
-    # IdentExprRestMethodCall
     def parse_IdentExprRestMethodCall(self):
         if self.is_punct("("):
             self.match_punct("(")
@@ -389,7 +352,6 @@ class RecursiveDescentParser:
             return {"node": "MethodCall", "children": [actuals, rest]}
         return {"node": "IdentExprRest", "children": [self.parse_IdentExprRest()]}
 
-    # IdentExprRest ::= = Expr | TermTail SimpleExprTail
     def parse_IdentExprRest(self):
         if self.is_op("="):
             self.match_op("=")
@@ -399,7 +361,6 @@ class RecursiveDescentParser:
         tail2 = self.parse_SimpleExprTail()
         return {"node": "IdentExprRest", "children": [tail1, tail2]}
 
-    # ── Statements ─────────────────────────────────────────────────────────
 
     def parse_IfStmt(self):
         self.match_keyword("if")
@@ -483,7 +444,6 @@ class RecursiveDescentParser:
         self.match_punct(";")
         return {"node": "ExprStmt", "children": [expr]}
 
-    # ── Expressions ────────────────────────────────────────────────────────
 
     def parse_Expr(self):
         t = self.current_token

@@ -1,7 +1,6 @@
 import os
 import sys
 
-# Ensure we can import from compiler module
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from compiler.lexer import Lexer
@@ -19,7 +18,6 @@ def test_file(filepath):
 
     error_handler = ErrorHandler()
 
-    # 1. Lexical Analysis
     lexer = Lexer(source_code)
     tokens = lexer.tokenize()
     
@@ -29,13 +27,11 @@ def test_file(filepath):
     if len(tokens) > 5:
         print("  ...")
 
-    # 2. Grammar Setup
     grammar = get_decaf_grammar()
     grammar.compute_follow()
     grammar.build_slr_tables()
     print("Grammar parsed, FIRST/FOLLOW computed, and SLR tables built.")
     
-    # 3. Parsers
     rd_parser = RecursiveDescentParser(tokens)
     rd_result = rd_parser.parse()
     print(f"RD Parser Errors: {len(rd_result['errors'])}")
@@ -54,7 +50,6 @@ def test_file(filepath):
     else:
         print("LR Parser: SUCCESS (No errors)")
     
-    # 4. Symbol Table Construction
     st_builder = SymbolTableBuilder(tokens)
     st = st_builder.build()
             
