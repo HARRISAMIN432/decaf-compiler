@@ -12,7 +12,26 @@ from compiler.semantic import SymbolTableBuilder
 from compiler.error_handler import ErrorHandler
 
 def test_file(filepath):
+    original_path = filepath
+    if not os.path.exists(filepath):
+        if filepath.endswith('.decaf'):
+            alt_path = filepath.replace('.decaf', '.txt')
+            if os.path.exists(alt_path):
+                filepath = alt_path
+                print(f"Using alternate file: {filepath}")
+        elif filepath.endswith('.txt'):
+            alt_path = filepath.replace('.txt', '.decaf')
+            if os.path.exists(alt_path):
+                filepath = alt_path
+                print(f"Using alternate file: {filepath}")
+    
     print(f"\n--- Testing {filepath} ---")
+    
+    if not os.path.exists(filepath):
+        print(f"ERROR: File not found: {filepath}")
+        print(f"Tried original: {original_path}")
+        return
+    
     with open(filepath, 'r') as f:
         source_code = f.read()
 
@@ -56,5 +75,8 @@ def test_file(filepath):
     print(f"Symbol Table Entries: {len(st.dump())}")
 
 if __name__ == '__main__':
-    test_file('../test/test3.decaf')
+    root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    test_file_path = os.path.join(root_dir, 'test', 'test4.txt')
+    print(f"Looking for file at: {test_file_path}")
+    test_file(test_file_path)
     print("\nTests completed successfully without crashing!")
