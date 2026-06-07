@@ -4,10 +4,10 @@ echo Starting Decaf Compiler Project
 echo =========================================
 
 echo Starting Python Flask Backend in a new CMD window...
-start cmd /k "cd backend && call venv\Scripts\activate && python main.py"
+start cmd /k "cd src\backend && call venv\Scripts\activate && python main.py"
 
 echo Starting React Frontend in a new CMD window...
-start cmd /k "cd frontend && npm run dev"
+start cmd /k "cd src\frontend && npm run dev"
 
 echo =========================================
 echo All services are starting up!
