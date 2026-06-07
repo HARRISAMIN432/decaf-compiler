@@ -1,55 +1,87 @@
 from compiler.symbol_table import SymbolTableManager
 
 class SymbolTableBuilder:
-    def __init__(self, tokens):
-        self.tokens = tokens
-        self.st = SymbolTableManager()
-        # enter_scope() will be called internally to manage scope 1 as global
-        
+    def __init__(self, tokens, error_handler=None):
+        self.tokens        = tokens
+        self.error_handler = error_handler
+        self.st            = SymbolTableManager()
+
     def build(self):
-        self.st.enter_scope() # Global scope
-        
+        self.st.enter_scope()   # Global scope (level 1)
+
         idx = 0
         while idx < len(self.tokens):
             t = self.tokens[idx]
-            
-            if t.type == "PUNCT" and t.value == '{':
+
+            # ── Scope boundaries ───────────────────────────────────────────
+            if t.type == "PUNCT_{" or (t.type == "PUNCT" and t.value == "{"):
                 self.st.enter_scope()
-            elif t.type == "PUNCT" and t.value == '}':
+                idx += 1
+                continue
+
+            if t.type == "PUNCT_}" or (t.type == "PUNCT" and t.value == "}"):
                 self.st.exit_scope()
-                
-            elif t.type == "KEYWORD" and t.value in ("int", "double", "bool", "string", "void", "class"):
-                if t.value == "class":
-                    # class IDENT
-                    if idx + 1 < len(self.tokens) and self.tokens[idx+1].type == "IDENT":
-                        name_token = self.tokens[idx+1]
-                        self.st.insert(name_token.value, "class", "class", name_token.line)
-                        idx += 1
-                else:
-                    var_type = t.value
-                    if idx + 1 < len(self.tokens) and self.tokens[idx+1].type == "IDENT":
-                        name_token = self.tokens[idx+1]
-                        
-                        # Lookahead to see if it's a function or variable
-                        if idx + 2 < len(self.tokens) and self.tokens[idx+2].value == '(':
-                            self.st.insert(name_token.value, "function", var_type, name_token.line)
-                        else:
-                            self.st.insert(name_token.value, "variable", var_type, name_token.line)
-                        idx += 1
-            
-            # Handling object instantiation/references loosely as variables if not explicitly caught
-            # For a proper compiler, this is done in a full AST traversal.
-            elif t.type == "IDENT":
-                # Check if it's a custom class type declaration like: Animal a;
-                # We can peek at the next token. If next is IDENT, it's a declaration.
-                if idx + 1 < len(self.tokens) and self.tokens[idx+1].type == "IDENT":
-                    # Only if it's not a function call or something else.
-                    # Usually, Type IDENT ;
-                    next_tok = self.tokens[idx+1]
-                    if idx + 2 < len(self.tokens) and self.tokens[idx+2].value in (';', ','):
-                        self.st.insert(next_tok.value, "object", t.value, next_tok.line)
-                        idx += 1
+                idx += 1
+                continue
+
+            # ── class IDENT ────────────────────────────────────────────────
+            if t.type in ("KEYWORD_class", "KEYWORD") and (
+                    t.type == "KEYWORD_class" or t.value == "class"):
+                if idx + 1 < len(self.tokens):
+                    nt = self.tokens[idx + 1]
+                    if nt.type == "IDENT":
+                        ok, msg = self.st.insert(nt.value, "class", "class", nt.line)
+                        if not ok:
+                            self._sem_error(nt.line, nt.column, msg)
+                        idx += 2
+                        continue
+
+            # ── Type IDENT … ───────────────────────────────────────────────
+            type_kws = {
+                "KEYWORD_int", "KEYWORD_double",
+                "KEYWORD_bool", "KEYWORD_string", "KEYWORD_void"
+            }
+            # also handle legacy KEYWORD tokens
+            legacy_type = (t.type == "KEYWORD" and
+                           t.value in ("int","double","bool","string","void"))
+
+            if t.type in type_kws or legacy_type:
+                var_type = t.value if hasattr(t, 'value') else t.type.split('_',1)[1]
+                if idx + 1 < len(self.tokens):
+                    nt = self.tokens[idx + 1]
+                    if nt.type == "IDENT":
+                        # Function?
+                        is_func = (idx + 2 < len(self.tokens) and
+                                   (self.tokens[idx+2].type in ("PUNCT_(","PUNCT") and
+                                    getattr(self.tokens[idx+2],'value','') == '('))
+                        kind = "function" if is_func else "variable"
+                        ok, msg = self.st.insert(nt.value, kind, var_type, nt.line)
+                        if not ok:
+                            self._sem_error(nt.line, nt.column, msg)
+                        idx += 2
+                        continue
+
+            # ── Named type: IDENT IDENT ; → object declaration ────────────
+            if t.type == "IDENT":
+                if idx + 1 < len(self.tokens):
+                    nt = self.tokens[idx + 1]
+                    if nt.type == "IDENT":
+                        if idx + 2 < len(self.tokens):
+                            after = self.tokens[idx + 2]
+                            semi  = (after.type in ("PUNCT_;","PUNCT") and
+                                     getattr(after,'value','') == ';')
+                            if semi:
+                                ok, msg = self.st.insert(
+                                    nt.value, "object", t.value, nt.line)
+                                if not ok:
+                                    self._sem_error(nt.line, nt.column, msg)
+                                idx += 3
+                                continue
 
             idx += 1
-            
+
         return self.st
+
+    def _sem_error(self, line, col, msg):
+        if self.error_handler:
+            self.error_handler.report_semantic_error(line, col, msg)
